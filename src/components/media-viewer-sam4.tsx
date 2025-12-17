@@ -47,39 +47,33 @@ export default function MediaViewer({ mediaUrl, resultUrl, error, detectionDetai
     >
       <Card className="overflow-hidden bg-card transition-shadow duration-300 hover:shadow-xl">
         <div className="relative max-h-[400px] overflow-hidden flex items-center justify-center bg-muted/30">
-          <AnimatePresence mode="wait">
-            {resultUrl ? (
+          {/* Base image - always visible */}
+          {mediaUrl && (
+            <img
+              src={mediaUrl}
+              alt="Original"
+              className="w-full h-full object-contain max-h-[400px]"
+            />
+          )}
+          
+          {/* Segmentation overlay - blends on top */}
+          <AnimatePresence>
+            {resultUrl && (
               <motion.div
-                key="result"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-                className="w-full h-full"
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center"
               >
                 <img
                   src={resultUrl}
-                  alt="Segmented result"
-                  className="w-full h-full object-contain max-h-[400px]"
+                  alt="Segmentation overlay"
+                  className="w-full h-full object-contain max-h-[400px] mix-blend-normal"
                   crossOrigin="anonymous"
                 />
               </motion.div>
-            ) : mediaUrl ? (
-              <motion.div
-                key="preview"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-                className="w-full h-full"
-              >
-                <img
-                  src={mediaUrl}
-                  alt="Preview"
-                  className="w-full h-full object-contain max-h-[400px]"
-                />
-              </motion.div>
-            ) : null}
+            )}
           </AnimatePresence>
         </div>
         

@@ -45,14 +45,24 @@ export default function VideoViewer({ mediaUrl, resultUrl, error }: VideoViewerP
     >
       <Card className="overflow-hidden bg-card transition-shadow duration-300 hover:shadow-xl">
         <div className="relative max-h-[400px] overflow-hidden flex items-center justify-center bg-muted/30">
+          {/* Base video - always visible */}
+          {mediaUrl && !resultUrl && (
+            <video
+              src={mediaUrl}
+              controls
+              className="w-full max-h-[400px]"
+            />
+          )}
+          
+          {/* Result video - replaces original when ready */}
           <AnimatePresence mode="wait">
-            {resultUrl ? (
+            {resultUrl && (
               <motion.div
                 key="result"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
                 className="w-full"
               >
                 <video
@@ -62,22 +72,7 @@ export default function VideoViewer({ mediaUrl, resultUrl, error }: VideoViewerP
                   crossOrigin="anonymous"
                 />
               </motion.div>
-            ) : mediaUrl ? (
-              <motion.div
-                key="preview"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-                className="w-full"
-              >
-                <video
-                  src={mediaUrl}
-                  controls
-                  className="w-full max-h-[400px]"
-                />
-              </motion.div>
-            ) : null}
+            )}
           </AnimatePresence>
         </div>
       </Card>
