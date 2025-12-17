@@ -514,6 +514,94 @@ export default function UniversalMediaInterface() {
                     />
                   </div>
 
+                  {/* Video Trim Controls */}
+                  <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-muted-foreground">Trim Video</label>
+                      <span className="text-xs text-muted-foreground">
+                        {trimStart[0].toFixed(1)}s - {trimEnd[0].toFixed(1)}s ({(trimEnd[0] - trimStart[0]).toFixed(1)}s)
+                      </span>
+                    </div>
+                    
+                    {/* Start Time Slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-muted-foreground">Start Time</label>
+                        <span className="text-xs font-medium">{trimStart[0].toFixed(1)}s</span>
+                      </div>
+                      <Slider
+                        value={trimStart}
+                        onValueChange={(value) => {
+                          if (value[0] < trimEnd[0]) {
+                            setTrimStart(value)
+                          }
+                        }}
+                        min={0}
+                        max={videoDuration}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* End Time Slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-muted-foreground">End Time</label>
+                        <span className="text-xs font-medium">{trimEnd[0].toFixed(1)}s</span>
+                      </div>
+                      <Slider
+                        value={trimEnd}
+                        onValueChange={(value) => {
+                          if (value[0] > trimStart[0]) {
+                            setTrimEnd(value)
+                          }
+                        }}
+                        min={0}
+                        max={videoDuration}
+                        step={0.1}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Visual Timeline */}
+                    <div className="relative h-8 rounded-md bg-background overflow-hidden">
+                      {/* Full timeline */}
+                      <div className="absolute inset-0 bg-muted" />
+                      
+                      {/* Selected region */}
+                      <div
+                        className="absolute top-0 bottom-0 bg-primary/30 border-x-2 border-primary"
+                        style={{
+                          left: `${(trimStart[0] / videoDuration) * 100}%`,
+                          right: `${((videoDuration - trimEnd[0]) / videoDuration) * 100}%`,
+                        }}
+                      />
+
+                      {/* Time markers */}
+                      <div className="absolute inset-0 flex items-center justify-between px-2 text-xs text-muted-foreground pointer-events-none">
+                        <span>0s</span>
+                        <span>{(videoDuration / 2).toFixed(1)}s</span>
+                        <span>{videoDuration.toFixed(1)}s</span>
+                      </div>
+                    </div>
+
+                    {/* Reset Button */}
+                    {(trimStart[0] > 0 || trimEnd[0] < videoDuration) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTrimStart([0])
+                          setTrimEnd([videoDuration])
+                        }}
+                        className="w-full"
+                      >
+                        <RotateCcw className="mr-2 size-3" />
+                        Reset to Full Video
+                      </Button>
+                    )}
+                  </div>
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-medium text-muted-foreground">Max Frames</label>
@@ -540,6 +628,12 @@ export default function UniversalMediaInterface() {
                       </>
                     )}
                   </Button>
+
+                  {(trimStart[0] > 0 || trimEnd[0] < videoDuration) && (
+                    <p className="text-xs text-center text-amber-600 dark:text-amber-500">
+                      💡 Note: Trim settings are for reference only. The full video will be processed (trimming feature coming soon).
+                    </p>
+                  )}
                 </>
               )}
 
