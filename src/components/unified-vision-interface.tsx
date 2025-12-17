@@ -9,7 +9,6 @@ import { Slider } from "@/components/ui/slider"
 import MediaViewer from "@/components/media-viewer-sam4"
 import { motion, AnimatePresence } from "framer-motion"
 import { isValidImageFile } from "@/lib/huggingface-api"
-import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface ProcessingResult {
   output?: string
@@ -26,9 +25,10 @@ interface Point {
 
 interface UnifiedVisionInterfaceProps {
   mode: 'text' | 'box' | 'tracker'
+  onModeChange: (mode: 'text' | 'box' | 'tracker') => void
 }
 
-export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceProps) {
+export default function UnifiedVisionInterface({ mode, onModeChange }: UnifiedVisionInterfaceProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [result, setResult] = useState<ProcessingResult | null>(null)
@@ -571,23 +571,38 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
                   <label htmlFor="prompt" className="text-sm font-semibold uppercase tracking-wide text-primary whitespace-nowrap">
                     What to identify
                   </label>
-                  <TabsList className="grid w-full sm:w-auto sm:min-w-[300px] grid-cols-3">
-                    <TabsTrigger value="text" className="flex items-center gap-2 text-xs sm:text-sm">
+                  <div className="grid w-full sm:w-auto sm:min-w-[300px] grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+                    <Button
+                      variant={mode === 'text' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => onModeChange('text')}
+                      className="flex items-center gap-2 text-xs sm:text-sm"
+                    >
                       <Search className="size-3 sm:size-4" />
                       <span className="hidden sm:inline">Text Prompt</span>
                       <span className="sm:hidden">Text</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="box" className="flex items-center gap-2 text-xs sm:text-sm">
+                    </Button>
+                    <Button
+                      variant={mode === 'box' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => onModeChange('box')}
+                      className="flex items-center gap-2 text-xs sm:text-sm"
+                    >
                       <Box className="size-3 sm:size-4" />
                       <span className="hidden sm:inline">Bounding Box</span>
                       <span className="sm:hidden">Box</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="tracker" className="flex items-center gap-2 text-xs sm:text-sm">
+                    </Button>
+                    <Button
+                      variant={mode === 'tracker' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => onModeChange('tracker')}
+                      className="flex items-center gap-2 text-xs sm:text-sm"
+                    >
                       <MousePointer className="size-3 sm:size-4" />
-                      <span className="hidden sm:inline">Auto Detect</span>
-                      <span className="sm:hidden">Auto</span>
-                    </TabsTrigger>
-                  </TabsList>
+                      <span className="hidden sm:inline">Interactive</span>
+                      <span className="sm:hidden">Click</span>
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
@@ -686,23 +701,38 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
                       Interactive Segmentation
                     </label>
                   </div>
-                  <TabsList className="grid w-full sm:w-auto sm:min-w-[300px] grid-cols-3">
-                    <TabsTrigger value="text" className="flex items-center gap-2 text-xs sm:text-sm">
+                  <div className="grid w-full sm:w-auto sm:min-w-[300px] grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+                    <Button
+                      variant={mode === 'text' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => onModeChange('text')}
+                      className="flex items-center gap-2 text-xs sm:text-sm"
+                    >
                       <Search className="size-3 sm:size-4" />
                       <span className="hidden sm:inline">Text Prompt</span>
                       <span className="sm:hidden">Text</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="box" className="flex items-center gap-2 text-xs sm:text-sm">
+                    </Button>
+                    <Button
+                      variant={mode === 'box' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => onModeChange('box')}
+                      className="flex items-center gap-2 text-xs sm:text-sm"
+                    >
                       <Box className="size-3 sm:size-4" />
                       <span className="hidden sm:inline">Bounding Box</span>
                       <span className="sm:hidden">Box</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="tracker" className="flex items-center gap-2 text-xs sm:text-sm">
+                    </Button>
+                    <Button
+                      variant={mode === 'tracker' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => onModeChange('tracker')}
+                      className="flex items-center gap-2 text-xs sm:text-sm"
+                    >
                       <MousePointer className="size-3 sm:size-4" />
                       <span className="hidden sm:inline">Interactive</span>
                       <span className="sm:hidden">Click</span>
-                    </TabsTrigger>
-                  </TabsList>
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Mode selector: Click or Auto */}
