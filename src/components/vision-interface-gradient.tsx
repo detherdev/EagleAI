@@ -305,7 +305,7 @@ export function VisionInterface() {
               </div>
               <p className="text-base font-medium">No results yet</p>
               <p className="text-sm mt-2 text-center max-w-xs">
-                Upload an image and click "Segment Image" to see results
+                Upload an image and click &quot;Segment Image&quot; to see results
               </p>
             </div>
           )}

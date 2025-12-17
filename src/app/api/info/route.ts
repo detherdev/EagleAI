@@ -10,7 +10,7 @@ const HF_SPACE_URL = process.env.NEXT_PUBLIC_HF_SPACE_URL || "https://daveyRI-SA
 export async function GET() {
   try {
     const client = await Client.connect(HF_SPACE_URL, {
-      hf_token: process.env.HF_TOKEN,
+      hf_token: process.env.HF_TOKEN as `hf_${string}` | undefined,
     })
     const apiInfo = await client.view_api()
     

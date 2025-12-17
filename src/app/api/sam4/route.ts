@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Connect to the Gradio Space using official client with HF token for private spaces
     const client = await Client.connect(HF_SPACE_URL, {
-      hf_token: process.env.HF_TOKEN,
+      hf_token: process.env.HF_TOKEN as `hf_${string}` | undefined,
     })
     
     // Call the /process_image_text endpoint with correct parameters
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract the result properly
-    const resultImage = result.data[0] // First element is the result image object
-    const details = result.data[1] // Second element is the details text
+    const resultImage = (result.data as any[])[0] // First element is the result image object
+    const details = (result.data as any[])[1] // Second element is the details text
     
     // Log for debugging
     console.log('API Result:', JSON.stringify(result.data, null, 2))
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result.data,
-      duration: result.duration,
+      duration: (result as any).duration,
       result_image: {
         url: resultImage?.url || resultImage?.path,
         path: resultImage?.path,

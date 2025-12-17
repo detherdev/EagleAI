@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Connect to the Gradio Space using official client with HF token for private spaces
     const client = await Client.connect(HF_SPACE_URL, {
-      hf_token: process.env.HF_TOKEN,
+      hf_token: process.env.HF_TOKEN as `hf_${string}` | undefined,
     })
     
     // Call the /process_video_text endpoint
@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result.data,
-      duration: result.duration,
-      result_video: result.data[0], // First element is the result video
-      status: result.data[1], // Second element is the status text
+      duration: (result as any).duration,
+      result_video: (result.data as any[])[0], // First element is the result video
+      status: (result.data as any[])[1], // Second element is the status text
     })
   } catch (error) {
     // Clean up temp file on error

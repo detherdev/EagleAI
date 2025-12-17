@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     await writeFile(tempFilePath, buffer)
 
     const client = await Client.connect(HF_SPACE_URL, {
-      hf_token: process.env.HF_TOKEN,
+      hf_token: process.env.HF_TOKEN as `hf_${string}` | undefined,
     })
 
     console.log("Calling tracker API with multimask:", multimask)
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       }
       // If it's an array, take the first element
       else if (Array.isArray(result.data) && result.data.length > 0) {
-        resultImage = result.data[0] as { url?: string; path?: string }
+        resultImage = (result.data as any[])[0] as { url?: string; path?: string }
       }
     }
 
