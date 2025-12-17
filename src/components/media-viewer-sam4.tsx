@@ -46,7 +46,7 @@ export default function MediaViewer({ mediaUrl, resultUrl, error, detectionDetai
       transition={{ duration: 0.4 }}
     >
       <Card className="overflow-hidden bg-card transition-shadow duration-300 hover:shadow-xl">
-        <div className="relative">
+        <div className="relative max-h-[400px] overflow-hidden flex items-center justify-center bg-muted/30">
           <AnimatePresence mode="wait">
             {resultUrl ? (
               <motion.div
@@ -55,11 +55,12 @@ export default function MediaViewer({ mediaUrl, resultUrl, error, detectionDetai
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
+                className="w-full h-full"
               >
                 <img
                   src={resultUrl}
                   alt="Segmented result"
-                  className="w-full"
+                  className="w-full h-full object-contain max-h-[400px]"
                   crossOrigin="anonymous"
                 />
               </motion.div>
@@ -70,11 +71,12 @@ export default function MediaViewer({ mediaUrl, resultUrl, error, detectionDetai
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
+                className="w-full h-full"
               >
                 <img
                   src={mediaUrl}
                   alt="Preview"
-                  className="w-full"
+                  className="w-full h-full object-contain max-h-[400px]"
                 />
               </motion.div>
             ) : null}

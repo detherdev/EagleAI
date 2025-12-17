@@ -44,7 +44,7 @@ export default function VideoViewer({ mediaUrl, resultUrl, error }: VideoViewerP
       transition={{ duration: 0.4 }}
     >
       <Card className="overflow-hidden bg-card transition-shadow duration-300 hover:shadow-xl">
-        <div className="relative">
+        <div className="relative max-h-[400px] overflow-hidden flex items-center justify-center bg-muted/30">
           <AnimatePresence mode="wait">
             {resultUrl ? (
               <motion.div
@@ -53,18 +53,14 @@ export default function VideoViewer({ mediaUrl, resultUrl, error }: VideoViewerP
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
+                className="w-full"
               >
                 <video
                   src={resultUrl}
                   controls
-                  className="w-full"
+                  className="w-full max-h-[400px]"
                   crossOrigin="anonymous"
                 />
-                <div className="border-t border-border bg-muted/30 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">
-                    Tracking complete
-                  </p>
-                </div>
               </motion.div>
             ) : mediaUrl ? (
               <motion.div
@@ -73,17 +69,13 @@ export default function VideoViewer({ mediaUrl, resultUrl, error }: VideoViewerP
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
+                className="w-full"
               >
                 <video
                   src={mediaUrl}
                   controls
-                  className="w-full"
+                  className="w-full max-h-[400px]"
                 />
-                <div className="border-t border-border bg-muted/30 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">
-                    Ready to analyze
-                  </p>
-                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>
