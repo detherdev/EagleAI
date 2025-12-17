@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Upload, ImageIcon, Play, X, Search, MousePointer, Box, Wand2 } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { Upload, ImageIcon, Play, X, Search, MousePointer, Box, Wand2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -17,6 +17,11 @@ interface ProcessingResult {
   error?: string
   resultImageUrl?: string
   details?: string
+}
+
+interface Point {
+  x: number
+  y: number
 }
 
 interface UnifiedVisionInterfaceProps {
@@ -36,7 +41,11 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [clickPoints, setClickPoints] = useState<Point[]>([])
+  const [isClickMode, setIsClickMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -211,6 +220,88 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
     }
   }
 
+  const handleImageClick = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (mode !== 'tracker' || !isClickMode || !selectedFile || isProcessing) return
+
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+
+    const newPoint = { x, y }
+    const newPoints = [...clickPoints, newPoint]
+    setClickPoints(newPoints)
+
+    // Auto-segment after click
+    await handleClickSegment(newPoints)
+  }
+
+  const handleClickSegment = async (points: Point[]) => {
+    if (!selectedFile || points.length === 0) return
+
+    setIsProcessing(true)
+    setIsAnalyzing(true)
+    setError(null)
+    const startTime = Date.now()
+
+    try {
+      const formData = new FormData()
+      formData.append('image', selectedFile)
+      formData.append('points', JSON.stringify(points.map(p => [p.x, p.y])))
+
+      console.log('Click-segment: Sending request with points:', points)
+
+      const response = await fetch('/api/sam4/tracker', {
+        method: 'POST',
+        body: formData,
+      })
+
+      console.log('Click-segment: Response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Click-segment: Error response:', errorData)
+        throw new Error(errorData.details || errorData.error || 'Failed to process image')
+      }
+
+      const apiResult = await response.json()
+      console.log('Click-segment: API result:', apiResult)
+      
+      const endTime = Date.now()
+      const totalTime = (endTime - startTime) / 1000
+      
+      const imageUrl = apiResult.result_image_url
+      console.log('Click-segment: Image URL:', imageUrl)
+
+      if (imageUrl) {
+        setAnalysisTime(totalTime)
+        setResultUrl(imageUrl)
+        setResult({
+          resultImageUrl: imageUrl,
+        })
+        setError(null)
+        console.log('Click-segment: Success!')
+      } else {
+        throw new Error("No result image returned from segmentation.")
+      }
+    } catch (err) {
+      console.error('Click-segment: Error:', err)
+      const errorMsg = err instanceof Error ? err.message : "An error occurred processing the image"
+      setError(errorMsg)
+      setResult({ error: errorMsg })
+    } finally {
+      setIsProcessing(false)
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleResetPoints = () => {
+    setClickPoints([])
+    setResultUrl(null)
+    setResult(null)
+    setError(null)
+    setAnalysisTime(null)
+  }
+
   const handleClear = () => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl)
@@ -222,10 +313,51 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
     setResultUrl(null)
     setError(null)
     setAnalysisTime(null)
+    setClickPoints([])
+    setIsClickMode(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
   }
+
+  // Draw points on canvas
+  useEffect(() => {
+    if (!canvasRef.current || !imageRef.current || clickPoints.length === 0) return
+
+    const canvas = canvasRef.current
+    const image = imageRef.current
+    
+    canvas.width = image.clientWidth
+    canvas.height = image.clientHeight
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    clickPoints.forEach((point, index) => {
+      const x = (point.x / 100) * canvas.width
+      const y = (point.y / 100) * canvas.height
+
+      // Draw point
+      ctx.fillStyle = "rgb(233, 124, 97)"
+      ctx.beginPath()
+      ctx.arc(x, y, 6, 0, 2 * Math.PI)
+      ctx.fill()
+
+      // Draw border
+      ctx.strokeStyle = "rgb(250, 247, 242)"
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.arc(x, y, 6, 0, 2 * Math.PI)
+      ctx.stroke()
+
+      // Draw label
+      ctx.fillStyle = "rgb(250, 247, 242)"
+      ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif"
+      ctx.fillText(`${index + 1}`, x + 10, y - 10)
+    })
+  }, [clickPoints])
 
   return (
     <div className="space-y-6 w-full">
@@ -287,6 +419,104 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
               </motion.button>
             </Card>
           </motion.div>
+        ) : mode === 'tracker' && isClickMode ? (
+          <>
+            <Card className="overflow-hidden bg-card transition-shadow duration-300 hover:shadow-xl">
+              <div 
+                className="relative max-h-[400px] overflow-hidden flex items-center justify-center bg-muted/30 cursor-crosshair"
+                onClick={handleImageClick}
+              >
+                {/* Base image */}
+                {previewUrl && (
+                  <img
+                    ref={imageRef}
+                    src={previewUrl}
+                    alt="Original"
+                    className="w-full h-full object-contain max-h-[400px]"
+                  />
+                )}
+                
+                {/* Canvas for click points */}
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ width: '100%', height: '100%' }}
+                />
+                
+                {/* Segmentation overlay */}
+                <AnimatePresence>
+                  {resultUrl && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.8, ease: "easeInOut" }}
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <img
+                        src={resultUrl}
+                        alt="Segmentation overlay"
+                        className="w-full h-full object-contain max-h-[400px] mix-blend-normal"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Click instruction overlay */}
+                {!isProcessing && clickPoints.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+                      <p className="text-sm font-medium text-primary">
+                        Click on an object to segment it
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Error display */}
+              {error && (
+                <div className="border-t border-border bg-destructive/10 px-4 py-3">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+            </Card>
+
+            {/* Clear and Reset Buttons */}
+            <div className="absolute right-3 top-3 z-10 flex gap-2">
+              {clickPoints.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetPoints}
+                    className="size-8 rounded-full bg-background/80 p-0 backdrop-blur-sm transition-all hover:bg-background"
+                    title="Reset points"
+                  >
+                    <RotateCcw className="size-4" />
+                  </Button>
+                </motion.div>
+              )}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <motion.div whileHover={{ rotate: 90, scale: 1.1 }} transition={{ duration: 0.2 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClear}
+                    className="size-8 rounded-full bg-background/80 p-0 backdrop-blur-sm transition-all hover:bg-background"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </div>
+          </>
         ) : (
           <>
             <MediaViewer 
@@ -445,7 +675,7 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
                   <div className="flex items-center space-x-2">
                     <MousePointer className="size-4 text-primary" />
                     <label className="text-sm font-semibold uppercase tracking-wide text-primary whitespace-nowrap">
-                      Auto Detect Objects
+                      Interactive Segmentation
                     </label>
                   </div>
                   <TabsList className="grid w-full sm:w-auto sm:min-w-[300px] grid-cols-3">
@@ -461,38 +691,85 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
                     </TabsTrigger>
                     <TabsTrigger value="tracker" className="flex items-center gap-2 text-xs sm:text-sm">
                       <MousePointer className="size-3 sm:size-4" />
-                      <span className="hidden sm:inline">Auto Detect</span>
-                      <span className="sm:hidden">Auto</span>
+                      <span className="hidden sm:inline">Interactive</span>
+                      <span className="sm:hidden">Click</span>
                     </TabsTrigger>
                   </TabsList>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Automatically detect and segment all objects in the image without text prompts. Works best with images containing people, animals, vehicles, or common objects.
-                </p>
-                <p className="text-xs text-amber-600 dark:text-amber-500">
-                  💡 Tip: If no objects are detected, try using the &quot;Text Prompt&quot; tab and describe what you want to find.
-                </p>
 
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                {/* Mode selector: Click or Auto */}
+                <div className="flex gap-2">
                   <Button
-                    onClick={handleAutoDetect}
-                    disabled={!selectedFile || isProcessing}
-                    className="w-full bg-secondary text-secondary-foreground transition-all duration-300 hover:bg-secondary/90 hover:shadow-lg"
-                    size="lg"
+                    variant={isClickMode ? "default" : "outline"}
+                    onClick={() => {
+                      setIsClickMode(true)
+                      handleResetPoints()
+                    }}
+                    disabled={!selectedFile}
+                    className="flex-1"
                   >
-                    {isProcessing ? (
-                      <>
-                        <div className="mr-2 size-4 animate-spin rounded-full border-2 border-secondary-foreground border-t-transparent" />
-                        Segmenting...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="mr-2 size-4" />
-                        Segment Objects
-                      </>
-                    )}
+                    <MousePointer className="mr-2 size-4" />
+                    Click to Segment
                   </Button>
-                </motion.div>
+                  <Button
+                    variant={!isClickMode ? "default" : "outline"}
+                    onClick={() => {
+                      setIsClickMode(false)
+                      handleResetPoints()
+                    }}
+                    disabled={!selectedFile}
+                    className="flex-1"
+                  >
+                    <Wand2 className="mr-2 size-4" />
+                    Auto Detect
+                  </Button>
+                </div>
+
+                {isClickMode ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Click on objects in the image to segment them. Each click will refine the selection. Click the reset button to start over.
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      💡 Tip: Click near the center of the object you want to segment for best results.
+                    </p>
+                    {clickPoints.length > 0 && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        {clickPoints.length} point{clickPoints.length !== 1 ? 's' : ''} selected
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically detect and segment all objects in the image without any input. Works best with images containing people, animals, vehicles, or common objects.
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      💡 Tip: If no objects are detected, try using the &quot;Text Prompt&quot; tab and describe what you want to find.
+                    </p>
+
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={handleAutoDetect}
+                        disabled={!selectedFile || isProcessing}
+                        className="w-full bg-secondary text-secondary-foreground transition-all duration-300 hover:bg-secondary/90 hover:shadow-lg"
+                        size="lg"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <div className="mr-2 size-4 animate-spin rounded-full border-2 border-secondary-foreground border-t-transparent" />
+                            Segmenting...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="mr-2 size-4" />
+                            Segment All Objects
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </>
+                )}
 
                 {analysisTime !== null && (
                   <motion.p
