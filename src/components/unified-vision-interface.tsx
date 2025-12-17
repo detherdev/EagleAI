@@ -145,6 +145,7 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
     setIsProcessing(true)
     setIsAnalyzing(true)
     setError(null)
+    setResult(null)
     const startTime = Date.now()
 
     try {
@@ -154,24 +155,34 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
       formData.append('threshold', '0.25')
       formData.append('maskThreshold', '0.3')
 
+      console.log('Auto-detect: Sending request to /api/sam4')
+
       const response = await fetch('/api/sam4', {
         method: 'POST',
         body: formData,
       })
 
+      console.log('Auto-detect: Response status:', response.status)
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('Auto-detect: Error response:', errorData)
         throw new Error(errorData.details || errorData.error || 'Failed to process image')
       }
 
       const apiResult = await response.json()
+      console.log('Auto-detect: API result:', apiResult)
+      
       const endTime = Date.now()
       const totalTime = (endTime - startTime) / 1000
       
       const imageUrl = apiResult.result_image?.url || apiResult.result_image?.path
+      console.log('Auto-detect: Image URL:', imageUrl)
 
       if (imageUrl) {
         const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`
+        console.log('Auto-detect: Proxied URL:', proxiedUrl)
+        
         setAnalysisTime(totalTime)
         setResultUrl(proxiedUrl)
         setResult({
@@ -180,14 +191,17 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
           details: apiResult.details,
         })
         setError(null)
+        console.log('Auto-detect: Success! Result set.')
       } else {
+        console.error('Auto-detect: No image URL in response')
         const details = apiResult.details || ""
         if (details.includes("Objects found: 0")) {
           throw new Error("No objects detected in the image. Try uploading a different image with more distinct objects.")
         }
-        throw new Error("No result image returned.")
+        throw new Error("No result image returned. Check console for details.")
       }
     } catch (err) {
+      console.error('Auto-detect: Error:', err)
       const errorMsg = err instanceof Error ? err.message : "An error occurred processing the image"
       setError(errorMsg)
       setResult({ error: errorMsg })
