@@ -225,6 +225,16 @@ export default function UniversalMediaInterface() {
       formData.append('prompt', prompt)
       formData.append('maxFrames', maxFrames[0].toString())
       formData.append('timeoutSeconds', '120')
+      formData.append('trimStart', trimStart[0].toString())
+      formData.append('trimEnd', trimEnd[0].toString())
+
+      console.log('Video analysis parameters:', {
+        prompt,
+        maxFrames: maxFrames[0],
+        trimStart: trimStart[0],
+        trimEnd: trimEnd[0],
+        duration: trimEnd[0] - trimStart[0]
+      })
 
       const response = await fetch('/api/sam4/video', {
         method: 'POST',
@@ -630,8 +640,8 @@ export default function UniversalMediaInterface() {
                   </Button>
 
                   {(trimStart[0] > 0 || trimEnd[0] < videoDuration) && (
-                    <p className="text-xs text-center text-amber-600 dark:text-amber-500">
-                      💡 Note: Trim settings are for reference only. The full video will be processed (trimming feature coming soon).
+                    <p className="text-xs text-center text-primary">
+                      ✂️ Video will be trimmed to {(trimEnd[0] - trimStart[0]).toFixed(1)}s before processing
                     </p>
                   )}
                 </>
