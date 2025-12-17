@@ -396,7 +396,7 @@ export default function TrackerInterface({ tabsList }: TrackerInterfaceProps) {
                     Automatically detect and segment all objects in the image without text prompts. Works best with images containing people, animals, vehicles, or common objects.
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-500">
-                    💡 Tip: If no objects are detected, try using the "Text Prompt" tab and describe what you want to find.
+                    💡 Tip: If no objects are detected, try using the &quot;Text Prompt&quot; tab and describe what you want to find.
                   </p>
 
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
