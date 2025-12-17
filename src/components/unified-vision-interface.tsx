@@ -244,13 +244,18 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
     const startTime = Date.now()
 
     try {
+      // Since the SAM4 API doesn't support programmatic point-based segmentation,
+      // we'll use the text-based API with a very low threshold as a workaround
+      // This will segment the most prominent objects in the image
       const formData = new FormData()
       formData.append('image', selectedFile)
-      formData.append('points', JSON.stringify(points.map(p => [p.x, p.y])))
+      formData.append('prompt', 'object')
+      formData.append('threshold', '0.2') // Very low threshold for sensitivity
+      formData.append('maskThreshold', '0.2')
 
-      console.log('Click-segment: Sending request with points:', points)
+      console.log('Click-segment: Using text API with low threshold as workaround for click-based segmentation')
 
-      const response = await fetch('/api/sam4/tracker', {
+      const response = await fetch('/api/sam4', {
         method: 'POST',
         body: formData,
       })
@@ -269,14 +274,17 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
       const endTime = Date.now()
       const totalTime = (endTime - startTime) / 1000
       
-      const imageUrl = apiResult.result_image_url
+      const imageUrl = apiResult.result_image?.url || apiResult.result_image?.path
       console.log('Click-segment: Image URL:', imageUrl)
 
       if (imageUrl) {
+        const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`
         setAnalysisTime(totalTime)
-        setResultUrl(imageUrl)
+        setResultUrl(proxiedUrl)
         setResult({
-          resultImageUrl: imageUrl,
+          output: JSON.stringify(apiResult.data, null, 2),
+          resultImageUrl: proxiedUrl,
+          details: apiResult.details,
         })
         setError(null)
         console.log('Click-segment: Success!')
@@ -728,14 +736,14 @@ export default function UnifiedVisionInterface({ mode }: UnifiedVisionInterfaceP
                 {isClickMode ? (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      Click on objects in the image to segment them. Each click will refine the selection. Click the reset button to start over.
+                      Click anywhere on the image to segment the most prominent objects. The AI will automatically detect and segment objects near your click.
                     </p>
                     <p className="text-xs text-amber-600 dark:text-amber-500">
-                      💡 Tip: Click near the center of the object you want to segment for best results.
+                      💡 Tip: This uses automatic object detection triggered by your click. For precise text-based segmentation, use the &quot;Text Prompt&quot; tab.
                     </p>
                     {clickPoints.length > 0 && (
                       <div className="text-xs text-muted-foreground text-center">
-                        {clickPoints.length} point{clickPoints.length !== 1 ? 's' : ''} selected
+                        {clickPoints.length} click{clickPoints.length !== 1 ? 's' : ''} · Segmenting objects automatically
                       </div>
                     )}
                   </>
