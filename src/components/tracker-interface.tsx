@@ -153,12 +153,12 @@ export default function TrackerInterface() {
     try {
       const formData = new FormData()
       formData.append('image', selectedFile)
-      // Use the text detection API with a generic prompt to detect all objects
-      formData.append('prompt', 'all objects')
-      formData.append('threshold', '0.3') // Lower threshold for better detection
-      formData.append('maskThreshold', '0.5')
+      // Use the text detection API with a broad prompt to detect all objects
+      formData.append('prompt', 'object. thing. item. person. animal. vehicle.')
+      formData.append('threshold', '0.25') // Lower threshold for better detection
+      formData.append('maskThreshold', '0.3') // Lower mask threshold too
 
-      console.log("Sending request to /api/sam4 with prompt: 'all objects'")
+      console.log("Sending request to /api/sam4 with broad detection prompt")
 
       const response = await fetch('/api/sam4', {
         method: 'POST',
@@ -179,17 +179,24 @@ export default function TrackerInterface() {
       
       console.log("Interactive Tracker API result:", result)
       
-      const imageUrl = result.segmented_image_url
+      // Extract image URL from the result structure
+      const imageUrl = result.result_image?.url || result.result_image?.path
       console.log("Segmented image URL:", imageUrl)
       
-      const proxiedUrl = imageUrl ? `/api/proxy-image?url=${encodeURIComponent(imageUrl)}` : null
-      console.log("Proxied URL:", proxiedUrl)
-
-      if (proxiedUrl) {
+      if (imageUrl) {
+        const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`
+        console.log("Proxied URL:", proxiedUrl)
         setAnalysisTime(totalTime)
         setResultUrl(proxiedUrl)
       } else {
         console.error("Full API response:", JSON.stringify(result, null, 2))
+        
+        // Check if objects were found
+        const details = result.details || ""
+        if (details.includes("Objects found: 0")) {
+          throw new Error("No objects detected in the image. Try uploading a different image with more distinct objects.")
+        }
+        
         throw new Error("No result image returned. Check console for full response.")
       }
     } catch (err) {
@@ -371,11 +378,14 @@ export default function TrackerInterface() {
                   <div className="flex items-center space-x-2">
                     <MousePointer className="size-4 text-primary" />
                     <label className="text-sm font-semibold uppercase tracking-wide text-primary">
-                      Interactive Segmentation
+                      Auto Detect Objects
                     </label>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Automatically detect and segment all objects in the image without needing text prompts. Uses a lower detection threshold for comprehensive results.
+                    Automatically detect and segment all objects in the image without text prompts. Works best with images containing people, animals, vehicles, or common objects.
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    💡 Tip: If no objects are detected, try using the "Text Prompt" tab and describe what you want to find.
                   </p>
 
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
