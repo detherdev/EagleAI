@@ -127,7 +127,6 @@ export default function VideoInterface() {
     if (!prompt.trim() || !selectedFile) return
 
     setIsAnalyzing(true)
-    setResult(null)
     const startTime = Date.now()
 
     try {
@@ -163,6 +162,7 @@ export default function VideoInterface() {
       const apiResult = await response.json()
       const endTime = Date.now()
       const totalTime = (endTime - startTime) / 1000 // Convert to seconds
+      setAnalysisTime(totalTime)
       
       const videoUrl = apiResult.result_video?.url || apiResult.result_video?.path
       const proxiedUrl = videoUrl ? `/api/proxy-image?url=${encodeURIComponent(videoUrl)}` : null

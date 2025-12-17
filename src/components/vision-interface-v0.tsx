@@ -79,7 +79,6 @@ export default function VisionInterface() {
     if (!prompt.trim() || !selectedFile) return
 
     setIsAnalyzing(true)
-    setResult(null)
     const startTime = Date.now()
 
     try {
@@ -100,10 +99,13 @@ export default function VisionInterface() {
       }
 
       const apiResult = await response.json()
+      const endTime = Date.now()
+      const duration = (endTime - startTime) / 1000
       
       const imageUrl = apiResult.result_image?.url || apiResult.result_image?.path
       const proxiedUrl = imageUrl ? `/api/proxy-image?url=${encodeURIComponent(imageUrl)}` : null
 
+      setAnalysisTime(duration)
       setResult({
         output: JSON.stringify(apiResult.data, null, 2),
         duration: apiResult.duration,
