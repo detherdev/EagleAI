@@ -10,6 +10,8 @@ import MediaViewer from "@/components/media-viewer-sam4"
 import VideoViewer from "@/components/video-viewer-sam4"
 import { motion, AnimatePresence } from "framer-motion"
 import { isValidImageFile } from "@/lib/huggingface-api"
+import { FFmpeg } from "@ffmpeg/ffmpeg"
+import { fetchFile, toBlobURL } from "@ffmpeg/util"
 
 interface ProcessingResult {
   output?: string
@@ -50,9 +52,81 @@ export default function UniversalMediaInterface() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [clickPoints, setClickPoints] = useState<Point[]>([])
   const [isClickMode, setIsClickMode] = useState(false)
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false)
+  const [isTrimming, setIsTrimming] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const ffmpegRef = useRef(new FFmpeg())
+
+  // Load FFmpeg.wasm on component mount
+  useEffect(() => {
+    const loadFFmpeg = async () => {
+      const ffmpeg = ffmpegRef.current
+      if (ffmpegLoaded) return
+
+      try {
+        console.log('Loading FFmpeg.wasm...')
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        })
+        setFfmpegLoaded(true)
+        console.log('FFmpeg.wasm loaded successfully')
+      } catch (error) {
+        console.error('Failed to load FFmpeg.wasm:', error)
+        // FFmpeg not loading is not critical - we can still process full videos
+      }
+    }
+    loadFFmpeg()
+  }, [ffmpegLoaded])
+
+  // Client-side video trimming using FFmpeg.wasm
+  const trimVideoClient = async (file: File, startTime: number, endTime: number): Promise<File> => {
+    const ffmpeg = ffmpegRef.current
+    const duration = endTime - startTime
+
+    console.log(`Trimming video client-side: ${startTime}s to ${endTime}s (${duration}s duration)`)
+    setIsTrimming(true)
+    
+    try {
+      // Write input file to FFmpeg's virtual file system
+      await ffmpeg.writeFile('input.mp4', await fetchFile(file))
+
+      // Execute FFmpeg trim command
+      await ffmpeg.exec([
+        '-i', 'input.mp4',
+        '-ss', startTime.toString(),
+        '-t', duration.toString(),
+        '-c:v', 'libx264',
+        '-c:a', 'aac',
+        '-preset', 'ultrafast', // Fast encoding for better UX
+        '-y',
+        'output.mp4'
+      ])
+
+      // Read the output file
+      const data = await ffmpeg.readFile('output.mp4')
+      const trimmedBlob = new Blob([data], { type: 'video/mp4' })
+      const trimmedFile = new File([trimmedBlob], `trimmed_${file.name}`, { type: 'video/mp4' })
+
+      // Clean up virtual file system
+      await ffmpeg.deleteFile('input.mp4')
+      await ffmpeg.deleteFile('output.mp4')
+
+      const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      const trimmedSizeMB = (trimmedFile.size / (1024 * 1024)).toFixed(2)
+      console.log(`Video trimmed successfully: ${originalSizeMB}MB → ${trimmedSizeMB}MB`)
+      
+      return trimmedFile
+    } catch (error) {
+      console.error('Client-side trimming failed:', error)
+      throw error
+    } finally {
+      setIsTrimming(false)
+    }
+  }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -235,23 +309,41 @@ export default function UniversalMediaInterface() {
 
     setIsAnalyzing(true)
     setIsProcessing(true)
+    setResult(null)
+    setError(null)
     const startTime = Date.now()
 
     try {
+      let fileToSend = selectedFile
+
+      // Trim video client-side if needed and FFmpeg is loaded
+      const shouldTrim = trimEnd[0] > trimStart[0] && trimEnd[0] > 0 && trimEnd[0] !== videoDuration
+      if (shouldTrim && ffmpegLoaded) {
+        try {
+          console.log(`Client-side trimming: ${trimStart[0]}s to ${trimEnd[0]}s`)
+          fileToSend = await trimVideoClient(selectedFile, trimStart[0], trimEnd[0])
+          console.log(`Trimmed video size: ${(fileToSend.size / (1024 * 1024)).toFixed(2)}MB`)
+        } catch (trimError) {
+          console.error('Trimming failed, using original video:', trimError)
+          // Continue with original file if trimming fails
+        }
+      } else if (shouldTrim && !ffmpegLoaded) {
+        console.warn('FFmpeg not loaded, cannot trim video client-side')
+      }
+
       const formData = new FormData()
-      formData.append('video', selectedFile)
+      formData.append('video', fileToSend)
       formData.append('prompt', prompt)
       formData.append('maxFrames', maxFrames[0].toString())
       formData.append('timeoutSeconds', '120')
-      formData.append('trimStart', trimStart[0].toString())
-      formData.append('trimEnd', trimEnd[0].toString())
+      // No need to send trim parameters since we already trimmed client-side
 
       console.log('Video analysis parameters:', {
         prompt,
         maxFrames: maxFrames[0],
-        trimStart: trimStart[0],
-        trimEnd: trimEnd[0],
-        duration: trimEnd[0] - trimStart[0]
+        originalSize: `${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`,
+        uploadSize: `${(fileToSend.size / (1024 * 1024)).toFixed(2)}MB`,
+        trimmed: fileToSend !== selectedFile
       })
 
       const response = await fetch('/api/sam4/video', {
@@ -640,11 +732,16 @@ export default function UniversalMediaInterface() {
 
                   <Button
                     onClick={handleVideoAnalyze}
-                    disabled={!prompt.trim() || isAnalyzing}
+                    disabled={!prompt.trim() || isAnalyzing || isTrimming}
                     className="w-full"
                     size="lg"
                   >
-                    {isAnalyzing ? (
+                    {isTrimming ? (
+                      <>
+                        <div className="mr-2 size-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                        Trimming video...
+                      </>
+                    ) : isAnalyzing ? (
                       <>
                         <div className="mr-2 size-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                         Processing...
@@ -657,9 +754,16 @@ export default function UniversalMediaInterface() {
                     )}
                   </Button>
 
-                  {(trimStart[0] > 0 || trimEnd[0] < videoDuration) && (
+                  {!ffmpegLoaded && mediaType === 'video' && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      <div className="inline-block mr-1 size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Loading video trimming tool...
+                    </p>
+                  )}
+                  
+                  {ffmpegLoaded && (trimStart[0] > 0 || trimEnd[0] < videoDuration) && (
                     <p className="text-xs text-center text-primary">
-                      ✂️ Video will be trimmed to {(trimEnd[0] - trimStart[0]).toFixed(1)}s before processing
+                      ✂️ Video will be trimmed to {(trimEnd[0] - trimStart[0]).toFixed(1)}s in your browser before upload
                     </p>
                   )}
                 </>

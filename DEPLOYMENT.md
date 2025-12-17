@@ -2,41 +2,25 @@
 
 ## System Requirements
 
-### FFmpeg Installation
+### FFmpeg.wasm (Client-Side Video Processing)
 
-The video trimming feature requires FFmpeg to be installed on the server.
+**Good News!** Video trimming now happens entirely in the browser using FFmpeg.wasm. No server-side FFmpeg installation required!
 
-#### For Vercel Deployment
+#### How It Works
 
-Vercel serverless functions don't include FFmpeg by default. You have two options:
+1. User uploads a video
+2. FFmpeg.wasm loads in the browser (~30MB, cached after first load)
+3. Video is trimmed client-side before upload
+4. Only the trimmed segment is sent to the server
+5. No 50MB file size limits!
 
-1. **Use ffmpeg-static package** (Recommended for Vercel):
-   ```bash
-   npm install ffmpeg-static
-   ```
-   Then update the video API route to use the static binary.
+#### Benefits
 
-2. **Use a different platform** that supports FFmpeg:
-   - **Railway**: FFmpeg available
-   - **Render**: FFmpeg available
-   - **Fly.io**: FFmpeg available
-   - **DigitalOcean App Platform**: FFmpeg available
-
-#### For Local Development
-
-**macOS:**
-```bash
-brew install ffmpeg
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt update
-sudo apt install ffmpeg
-```
-
-**Windows:**
-Download from https://ffmpeg.org/download.html
+- ✅ **No server dependencies** - Works on any platform
+- ✅ **Perfect for Vercel** - No FFmpeg installation needed
+- ✅ **Faster processing** - Only upload what you need
+- ✅ **Better privacy** - Video trimming happens locally
+- ✅ **No file size limits** - Trim large videos before upload
 
 ## Environment Variables
 
