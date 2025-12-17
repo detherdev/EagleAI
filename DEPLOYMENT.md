@@ -80,6 +80,28 @@ For platforms with native FFmpeg support, no additional configuration needed. Ju
 - **Video Trimming**: If FFmpeg is not available, videos will be processed in full length
 - The app gracefully falls back to processing the full video if trimming fails
 
+## File Size Limits
+
+- **Maximum file size**: 50MB per upload
+- This applies to both images and videos
+- For larger videos:
+  1. Compress the video before uploading
+  2. Use video trimming to process only a segment
+  3. Deploy on a platform with higher limits (Railway, Render, etc.)
+
+### Increasing Limits on Vercel
+
+Vercel Pro and Enterprise plans support larger payloads. For the free tier, 50MB is recommended.
+
+To adjust the limit in `next.config.js`:
+```javascript
+api: {
+  bodyParser: {
+    sizeLimit: '50mb', // Adjust as needed
+  },
+}
+```
+
 ## Testing
 
 Test video trimming locally:

@@ -15,6 +15,18 @@ const nextConfig = {
       },
     ],
   },
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+    responseLimit: false,
+  },
+  // Increase serverless function size limit
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
 }
 
 module.exports = nextConfig

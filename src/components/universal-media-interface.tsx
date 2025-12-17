@@ -67,6 +67,15 @@ export default function UniversalMediaInterface() {
       return
     }
 
+    // Check file size (50MB limit)
+    const maxSize = 50 * 1024 * 1024 // 50MB in bytes
+    if (file.size > maxSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      setResult({ error: `File too large (${sizeMB}MB). Maximum size is 50MB. Please trim or compress your ${isVideo ? 'video' : 'image'}.` })
+      setError(`File too large (${sizeMB}MB). Maximum size is 50MB.`)
+      return
+    }
+
     setSelectedFile(file)
     setMediaType(isImage ? 'image' : 'video')
     setResult(null)
@@ -123,6 +132,15 @@ export default function UniversalMediaInterface() {
     if (!isImage && !isVideo) {
       setResult({ error: "Please select a valid image or video file" })
       setError("Please select a valid image or video file")
+      return
+    }
+
+    // Check file size (50MB limit)
+    const maxSize = 50 * 1024 * 1024 // 50MB in bytes
+    if (file.size > maxSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      setResult({ error: `File too large (${sizeMB}MB). Maximum size is 50MB. Please trim or compress your ${isVideo ? 'video' : 'image'}.` })
+      setError(`File too large (${sizeMB}MB). Maximum size is 50MB.`)
       return
     }
 
