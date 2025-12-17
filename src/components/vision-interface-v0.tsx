@@ -18,7 +18,11 @@ interface ProcessingResult {
   details?: string
 }
 
-export default function VisionInterface() {
+interface VisionInterfaceProps {
+  tabsList?: React.ReactNode
+}
+
+export default function VisionInterface({ tabsList }: VisionInterfaceProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [result, setResult] = useState<ProcessingResult | null>(null)
@@ -244,10 +248,17 @@ export default function VisionInterface() {
                 transition={{ delay: 0.2 }}
                 className="space-y-4"
               >
-                <div className="space-y-2">
-                  <label htmlFor="prompt" className="text-sm font-semibold uppercase tracking-wide text-primary">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <label htmlFor="prompt" className="text-sm font-semibold uppercase tracking-wide text-primary whitespace-nowrap">
                     What to identify
                   </label>
+                  {tabsList && (
+                    <div className="w-full sm:w-auto sm:min-w-[300px]">
+                      {tabsList}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">Describe what objects you want to detect in the media</p>
                 </div>
                 <Textarea

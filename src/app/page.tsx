@@ -10,27 +10,32 @@ export default function Home() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-background flex items-start justify-center pt-8">
+        <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
           {/* @ts-ignore - Radix UI type compatibility issue with React 18 */}
           <Tabs defaultValue="text" className="w-full">
-            <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-3 mb-8">
-              <TabsTrigger value="text" className="flex items-center gap-2">
-                <Search className="size-4" />
-                Text Prompt
-              </TabsTrigger>
-              <TabsTrigger value="box" className="flex items-center gap-2">
-                <Box className="size-4" />
-                Bounding Box
-              </TabsTrigger>
-              <TabsTrigger value="tracker" className="flex items-center gap-2">
-                <MousePointer className="size-4" />
-                Auto Detect
-              </TabsTrigger>
-            </TabsList>
-            
             <TabsContent value="text" className="mt-0">
-              <VisionInterface />
+              <VisionInterface 
+                tabsList={
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="text" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <Search className="size-3 sm:size-4" />
+                      <span className="hidden sm:inline">Text Prompt</span>
+                      <span className="sm:hidden">Text</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="box" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <Box className="size-3 sm:size-4" />
+                      <span className="hidden sm:inline">Bounding Box</span>
+                      <span className="sm:hidden">Box</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="tracker" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <MousePointer className="size-3 sm:size-4" />
+                      <span className="hidden sm:inline">Auto Detect</span>
+                      <span className="sm:hidden">Auto</span>
+                    </TabsTrigger>
+                  </TabsList>
+                }
+              />
             </TabsContent>
             
             <TabsContent value="box" className="mt-0">
@@ -46,7 +51,27 @@ export default function Home() {
             </TabsContent>
             
             <TabsContent value="tracker" className="mt-0">
-              <TrackerInterface />
+              <TrackerInterface 
+                tabsList={
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="text" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <Search className="size-3 sm:size-4" />
+                      <span className="hidden sm:inline">Text Prompt</span>
+                      <span className="sm:hidden">Text</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="box" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <Box className="size-3 sm:size-4" />
+                      <span className="hidden sm:inline">Bounding Box</span>
+                      <span className="sm:hidden">Box</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="tracker" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <MousePointer className="size-3 sm:size-4" />
+                      <span className="hidden sm:inline">Auto Detect</span>
+                      <span className="sm:hidden">Auto</span>
+                    </TabsTrigger>
+                  </TabsList>
+                }
+              />
             </TabsContent>
           </Tabs>
         </div>

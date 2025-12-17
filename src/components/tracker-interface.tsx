@@ -11,7 +11,11 @@ interface Point {
   y: number
 }
 
-export default function TrackerInterface() {
+interface TrackerInterfaceProps {
+  tabsList?: React.ReactNode
+}
+
+export default function TrackerInterface({ tabsList }: TrackerInterfaceProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
@@ -375,11 +379,18 @@ export default function TrackerInterface() {
             >
               <Card className="bg-card p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <MousePointer className="size-4 text-primary" />
-                    <label className="text-sm font-semibold uppercase tracking-wide text-primary">
-                      Auto Detect Objects
-                    </label>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center space-x-2">
+                      <MousePointer className="size-4 text-primary" />
+                      <label className="text-sm font-semibold uppercase tracking-wide text-primary whitespace-nowrap">
+                        Auto Detect Objects
+                      </label>
+                    </div>
+                    {tabsList && (
+                      <div className="w-full sm:w-auto sm:min-w-[300px]">
+                        {tabsList}
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Automatically detect and segment all objects in the image without text prompts. Works best with images containing people, animals, vehicles, or common objects.
